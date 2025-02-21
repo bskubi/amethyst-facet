@@ -5,16 +5,16 @@
 
 Install `facet.py` dependencies using mamba:
 ```
-mamba create -n facet python=3.12 numpy=1.26.4 click polars parse h5py duckdb
+mamba create -n facet pip && pip install amethyst-facet
 ```
 
 ### Compute Window Aggregations
 
-`python facet.py agg` will add window aggregations to an existing HDF5 file in version 2.0.0 (see below for information on file format conversion). 
+`facet agg` will add window aggregations to an existing HDF5 file in version 2.0.0 (see below for information on file format conversion). 
 
 Example:
 ```
-python agg -u 500 -u step_1000=1000:250 -w special_fancy_windows=windows.tsv -p 55 *.h5
+facet agg -u 500 -u step_1000=1000:250 -w special_fancy_windows=windows.tsv -p 55 *.h5
 ```
 
 This computes several types of windows.
@@ -25,7 +25,7 @@ This computes several types of windows.
 
 The `-p 55` option parallelizes the computation using 55 worker cores. All HDF5 files retrieved via `*.h5` will have windows computed in this case. Multiple globs can be specified, i.e. `-glob path1/*.h5 -glob path2/*.h5`.
 
-Other options are described in `python facet.py agg --help`.
+Other options are described in `facet agg --help`.
 
 ### Help
 
@@ -33,7 +33,7 @@ The options for facet.py can be explored at the command line by appending `--hel
 
 Example:
 ```
-$ python facet.py --help
+$ facet --help
 Usage: facet.py [OPTIONS] COMMAND [ARGS]...
 
 Options:
@@ -48,7 +48,7 @@ Commands:
 
 You can also call `--help` on subcommands. Example:
 
-```python facet.py agg --help```
+```facet agg --help```
 
 ### Convert old Amethyst HDF5 file format to version 2.0.0
 
@@ -56,7 +56,7 @@ File format conversion is necessary prior to computing window aggregations using
 
 Example:
 ```
-python facet.py convert old_format.h5 new_format.h5
+facet convert old_format.h5 new_format.h5
 ```
 
 #### Explanation and schema comparison:
@@ -84,7 +84,7 @@ The bp-resolution observations are stored under the dataset `1` by default. Wind
 Examples:
 
 ```
-python facet.py delete context CH *.h5
-python facet.py delete barcode AGCGAGCGAGCAHHCAHH *.h5
-python facet.py delete dataset 1 *.h5
+facet delete context CH *.h5
+facet delete barcode AGCGAGCGAGCAHHCAHH *.h5
+facet delete dataset 1 *.h5
 ```

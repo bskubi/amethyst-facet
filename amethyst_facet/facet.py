@@ -833,6 +833,3 @@ def agg(_globs, contexts, skipbc, requirebc, observations, unif, windows, compre
 @facet.command()
 def version():
     print("Facet v. 0.1.1 (Feb. 6, 2025)")
-
-if __name__ == "__main__":
-    facet()
