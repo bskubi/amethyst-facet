@@ -8,6 +8,39 @@ Install `facet.py` dependencies using mamba:
 mamba create -n facet pip && pip install amethyst-facet
 ```
 
+### Ingest base-pair-resolution .parquet and .cov files
+
+`facet calls2h5` will ingest base-pair-resolution methylation observations in the Scale Bio .parquet format as well as the legacy plaintext .cov format to the HDF5 format used by Amethyst. This can then be used to compute window aggregations using `facet agg`. Context and barcode can be flexibly parsed from the filename.
+
+Example:
+
+```
+facet calls2h5 --parse {barcode1}_{barcode2}_{barcode3}.{context}.cov output.h5 *.cov
+```
+
+This will store any `*.cov` file with a name in the format to form datasets named `/{context}/{barcode1}{barcode2}{barcode3}/1`.
+
+To specify how datasets are parsed, you can use the `--format` option to supply Python code that will format a list of strings `barcode` and a list of strings `context` into the group under which the dataset should be stored. Example:
+
+```
+facet calls2h5 --parse {barcode1}_{barcode2}.{context}.cov --format "'/{context[0]}/{barcode[0]}_{barcode[1]}'" output.h5 *.cov
+```
+
+Since the Scale Bio parquet format has a context column, there is no need to parse the context from the filename for these files.
+
+```
+facet calls2h5 --parse {barcode1}_{barcode2}.parquet output.h5 *.parquet
+```
+
+Other options for configuring input parsing and the output datset can be found using `facet calls2h5 --help`.
+
+The expected schema for .cov files is headerless, tab-delimited files with the following columns:
+
+`chr  pos pct t c`
+
+Only the `chr`, `pos`, `t`, and `c` columns will be written to the HDF5 file.
+
+
 ### Compute Window Aggregations
 
 `facet agg` will add window aggregations to an existing HDF5 file in version 2.0.0 (see below for information on file format conversion). 

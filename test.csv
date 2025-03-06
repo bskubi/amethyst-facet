@@ -1,0 +1,11 @@
+strand,context,chr,methylated,unmethylated,pos
++,CH,chr1,1,0,10
+-,CHG,chr2,2,3,56
++,CHH,chr3,0,2,18
++,CHG,chr2,0,0,85
+-,CHG,chr3,5,1,83
+-,CHH,chr1,4,5,29
++,CHG,chr3,1,2,78
++,CH,chr2,3,3,79
++,CHH,chr1,4,4,33
+-,CHH,chr3,4,5,22
