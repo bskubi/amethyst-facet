@@ -26,15 +26,11 @@ def test_uniform_windows_agg():
     assert result.equals(expected), f"{result} != {expected}"
 
 def test_variable_windows_agg():
-    windows_df = pl.DataFrame({
-        "start": [1,11],
-        "end": [11,21]
+    windows = pl.DataFrame({
+        "chr": ["1", "1", "2", "2"],
+        "start": [1, 11, 1, 11],
+        "end": [11, 21, 11, 21]
     })
-    windows = {
-        "1": windows_df,
-        "2": windows_df
-    }
-    windows = fct.VariableWindows(windows)
     values = pl.DataFrame(
         {
             "chr": ["1","1","1","2","2","2"],
@@ -43,16 +39,15 @@ def test_variable_windows_agg():
             "t": [1,1,1,1,1,1]
         }
     )
-    result = windows.aggregate(values)
-    expected = pl.DataFrame(
-        {
-            "chr": ["1","1","2","2"],
-            "start": [1,11,1,11],
-            "end": [11, 21, 11, 21],
-            "c": [2,1,2,1],
-            "t": [2,1,2,1],
-            "c_nz": [2,1,2,1],
-            "t_nz": [2,1,2,1]
-        }
-    )
+    aggregator = fct.VariableWindows()
+    result = aggregator.aggregate(windows, values)
+    expected = pl.DataFrame({
+        "chr": ["1","1","2","2"],
+        "start": [1,11,1,11],
+        "end": [11, 21, 11, 21],
+        "c": [2,1,2,1],
+        "t": [2,1,2,1],
+        "c_nz": [2,1,2,1],
+        "t_nz": [2,1,2,1]
+    })
     assert result.equals(expected), f"{result} != {expected}"

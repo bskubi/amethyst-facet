@@ -1,0 +1,63 @@
+import dataclasses as dc
+from pathlib import Path
+from typing import *
+
+import h5py
+
+from .dataset import Dataset
+from .reader import Reader
+
+class ReaderException(Exception):
+    def __init__(self, message: str):
+        super().__init__(message)
+
+@dc.dataclass
+class ReaderV1(Reader):
+    default_name: str = "1"
+    reader_type: str = "ReaderV1"
+
+    def create_dataset(self, path, data):
+        path = path.split("/")[1:]
+        context, barcode = path
+        name = self.default_name or path
+        return Dataset(context, barcode, name, data, path=path)
+
+    def barcodes(self):
+        def ignore(it):
+            if not isinstance(it, h5py.Dataset):
+                return f"type={type(it)}"
+            return False
+
+        for context in self.contexts():
+            for path, data in self.read(context, "barcodes", ignore):
+                yield self.create_dataset(path, data)
+
+    def observations(self):
+        def ignore(it):
+            if not isinstance(it, h5py.Dataset):
+                return f"type={type(it)}"
+            elif not self.is_observations(it):
+                return f"dtype={it.dtype}"
+            return False
+
+        for context in self.contexts():
+            for path, data in self.read(context, "barcodes", ignore):
+                yield self.create_dataset(path, data)
+
+    def windows(self):
+        def ignore(it):
+            if not isinstance(it, h5py.Dataset):
+                return f"type={type(it)}"
+            elif not self.is_windows(it):
+                return f"dtype={it.dtype}"
+            return False
+
+        for context in self.contexts():
+            for path, data in self.read(context, "barcodes", ignore):
+                yield self.create_dataset(path, data)
+
+    def barcode_observations(self, barcode: h5py.Group):
+        raise NotImplementedError("Not implemented in ReaderV1 as all barcodes are Datasets in Amethyst file format v1.")
+
+    def barcode_windows(self, barcode: h5py.Group):
+        raise NotImplementedError("Not implemented in ReaderV1 as all barcodes are Datasets in Amethyst file format v1.")

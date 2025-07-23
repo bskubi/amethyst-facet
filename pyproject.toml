@@ -15,7 +15,7 @@ h5py = "*"
 duckdb = "*"
 
 [tool.poetry.scripts]
-facet = "amethyst_facet.facet:facet"
+facet = "amethyst_facet.cli.commands.facet:facet"
 
 [build-system]
 requires = ["poetry-core"]
