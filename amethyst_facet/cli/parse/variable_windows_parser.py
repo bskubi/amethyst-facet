@@ -48,5 +48,5 @@ class VariableWindowsParser:
         else:
             name = stripped
 
-        result = VariableWindowsAggregator(path, name)
+        result = VariableWindowsAggregator(name=name, path=path)
         return result

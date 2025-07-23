@@ -6,7 +6,7 @@ from ..util import *
 
 def test_reader_v1(cleanup_temp):
     base = Path("tests/assets/temp")
-    data = np.array([("1", 1, 0, 0), ("2", 1, 1, 1)], dtype=fct.h5.dataset.observations_dtype)
+    data = np.array([("1", 1, 1, 0), ("2", 1, 1, 1)], dtype=fct.h5.dataset.observations_dtype)
     dataset1 = fct.h5.Dataset("CG", "barcode1", "1", data)
     dataset2 = fct.h5.Dataset("CH", "barcode2", "1", data)
     dataset1.writev1(base / "file1.h5")
@@ -20,12 +20,15 @@ def test_reader_v1(cleanup_temp):
     expected = pl.DataFrame({
         "chr":["1","2"],
         "pos":[1,1],
-        "c":[0,1],
+        "pct":[1.0, 0.5],
+        "c":[1,1],
         "t":[0,1]
     })
     assert len(observations_dfs) == 2
     assert all([o.barcode in ["barcode1", "barcode2"] for o in observations])
-    assert all([observed.equals(expected) for observed in observations_dfs])
+    for obs in observations_dfs:
+        obs = obs.cast({"chr": pl.String})
+        assert obs.equals(expected), f"{obs} != {expected}"
 
 def test_convert(cleanup_temp):
     base = Path("tests/assets/temp")

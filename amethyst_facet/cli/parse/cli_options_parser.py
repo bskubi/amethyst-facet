@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import *
 import h5py
 
-class h5pyInvalidCompressionArgs(ValueError):
+class InvalidCompressionArgs(ValueError):
     def __init__(self, compression, compression_opts):
         message = f"Invalid h5py compression arguments compression='{compression}' and compression_opts='{compression_opts}'"
         super().__init__(message)
@@ -57,7 +57,7 @@ class CLIOptionsParser:
         compression = compression.strip()
 
         if compression_opts and not compression:
-            raise h5pyInvalidCompressionArgs(compression, compression_opts)
+            raise InvalidCompressionArgs(compression, compression_opts)
 
         try:
             # Some compressors (i.e. gzip) require compression_opts be an int
@@ -75,7 +75,7 @@ class CLIOptionsParser:
             with h5py.File(bio, "w") as f:
                 f.create_dataset("test", shape=1, dtype=int, compression=compression, compression_opts=compression_opts)
         except Exception as e:
-            raise h5pyInvalidCompressionArgs(compression, compression_opts)
+            raise InvalidCompressionArgs(compression, compression_opts)
 
         return compression, compression_opts
 

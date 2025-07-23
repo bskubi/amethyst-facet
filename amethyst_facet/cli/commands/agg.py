@@ -42,7 +42,7 @@ class AmethystH5Aggregator():
         reader = fct.h5.ReaderV2(paths=paths, skip=skip, only=only)
         for observations in reader.observations():
             for window in windows:
-                result = window.window(observations)
+                result = window.aggregate(observations)
                 result.writev2(h5_out, compression, compression_opts)
 
 @click.command

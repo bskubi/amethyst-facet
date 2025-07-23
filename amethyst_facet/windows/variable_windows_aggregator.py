@@ -17,7 +17,8 @@ class VariableWindowAggregatorException(Exception):
 
 class InvalidVariableWindows(VariableWindowAggregatorException):
     def __init__(self, path: str | Path, message: str):
-        message = f"Window file at {path} {message}\n"
+
+        message = f"Windows at path {path} {message}\n" if path is not None else f"Windows {message}\n"
         message += (
             f"\nVariable windows schema:\n"
             f"A columnar plaintext format (i.e. CSV, TSV) with a header including column names 'chr', 'start', 'end'."
@@ -38,23 +39,23 @@ class InvalidWindowSize(InvalidVariableWindows):
 
 class InvalidColumn(InvalidVariableWindows):
     def __init__(self, path: str | Path, column: str):
-        message = f"non-numeric values found in column '{column}'"
+        message = f"had non-numeric values in column '{column}'"
         super().__init__(path, message)
 
 class DuplicateWindows(InvalidVariableWindows):
     def __init__(self, path: str | Path, duplicates: pl.DataFrame):
-        message = f"duplicate windows found:\n{duplicates}"
+        message = f"had duplicate rows:\n{duplicates}"
         super().__init__(path, message)
 
 class NullWindows(InvalidVariableWindows):
     def __init__(self, path: str | Path, nulls: pl.DataFrame):
-        message = f"null windows found:\n{nulls}"
+        message = f"had rows containing null values:\n{nulls}"
         super().__init__(path, message)
 
 @dc.dataclass
 class VariableWindowsAggregator(WindowsAggregator):
-    path: str | Path
     name: str
+    path: str | Path = None
     windows: pl.DataFrame = None
     
 
@@ -67,14 +68,17 @@ class VariableWindowsAggregator(WindowsAggregator):
             warnings.warn(f"Empty windows for variable windows at {self.path}.")
 
     def check_null(self):
-        if len(self.windows.null_count()) != 0:
+        null_count = self.windows.null_count()
+        no_nulls = null_count.filter(pl.any_horizontal(pl.all() > 0)).is_empty()
+
+        if not no_nulls:
             nulls = self.windows.filter(pl.any_horizontal(pl.all().is_null()))
             raise NullWindows(self.path, nulls)
 
     def check_numeric(self):
-        if not self.windows["start"].is_numeric():
+        if not self.windows["start"].dtype.is_numeric():
             raise InvalidColumn(self.path, "start")
-        if not self.windows["end"].is_numeric():
+        if not self.windows["end"].dtype.is_numeric():
             raise InvalidColumn(self.path, "end")
 
     def check_widths(self):
@@ -96,7 +100,7 @@ class VariableWindowsAggregator(WindowsAggregator):
             windows_chrom: pl.Series
         ):
         values_chrom: set = set(values_chrom.unique().to_list())
-        windows_chrom: set = set(values_chrom.unique().to_list())
+        windows_chrom: set = set(windows_chrom.unique().to_list())
         common_chroms = values_chrom.intersection(windows_chrom)
         if not common_chroms:
             values_chrom = sorted(list(values_chrom))
@@ -113,9 +117,10 @@ class VariableWindowsAggregator(WindowsAggregator):
 
 
     def __post_init__(self):
-        self.path = Path(self.path)
-        self.windows = duckdb.read_csv(self.path, header=True).pl()
-        self.check_header()
+        if self.path is not None and self.windows is None:
+            self.path = Path(self.path)
+            self.windows = duckdb.read_csv(self.path, header=True).pl()
+            self.check_header()
         
         self.windows = self.windows.select("chr", "start", "end")
         schema = {"chr": pl.String, "start": pl.Int64, "end": pl.Int64}
@@ -127,12 +132,11 @@ class VariableWindowsAggregator(WindowsAggregator):
         self.check_widths()
         self.check_duplicate()
 
-    def window(
+    def aggregate(
             self,
             observations: fct.h5.Dataset
         ) -> fct.h5.Dataset:
-        values = observations.pl()
-        values = values.cast({"chr": pl.String, "pos": pl.Int64, "c": pl.Int64, "t": pl.Int64})
+        values = self.clean_values(observations.pl())
         self.check_chroms(observations, values["chr"], self.windows["chr"])
         values = self.windows.join_where(
             values,
@@ -141,7 +145,9 @@ class VariableWindowsAggregator(WindowsAggregator):
             pl.col("end") > pl.col("pos")
         )
         values = values.select("chr", "start", "end", "c", "t")
-        values = self.aggregate(values)
+        
+        values = self._group_agg_sort(values)
+
         result = fct.h5.Dataset(
             observations.context,
             observations.barcode,
