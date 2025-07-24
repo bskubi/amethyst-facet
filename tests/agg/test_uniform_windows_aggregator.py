@@ -1,6 +1,24 @@
+from hypothesis import given, strategies as st
 import polars as pl
 
 import amethyst_facet as fct
+from .strategies import *
+
+@given(state=dense_uniform_observations())
+def test_dense_uniform_observations(state):
+    agg = fct.windows.UniformWindowsAggregator(
+        state["size"],
+        state["step"],
+        state["offset"]
+    )
+    observations = fct.h5.Dataset(
+        "CG",
+        "barcode1",
+        "1",
+        state["observations"]
+    )
+    result = agg.aggregate(observations).pl()
+    assert result.equals(state["expected"]), f"{result} != {state['expected']}"
 
 def test_uniform_windows_aggregator_basic():
 

@@ -1,8 +1,4 @@
-import logging
-import warnings
-
 import click
-import h5py
 
 import amethyst_facet as fct
 from ..parse import CLIOptionsParser

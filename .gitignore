@@ -4,3 +4,4 @@ tests/ignore/*
 logfile.txt
 *.pyc
 __pycache__/
+.hypothesis

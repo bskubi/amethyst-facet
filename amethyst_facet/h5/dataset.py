@@ -1,20 +1,36 @@
 import dataclasses as dc
+import logging
 from typing import *
 from pathlib import Path
 import warnings
 
-import h5py
 import numpy as np
 from numpy.typing import NDArray
 import pandas as pd
 import polars as pl
+
+import amethyst_facet as fct
 
 observations_v1_dtype = [("chr", "S10"), ("pos", int), ("pct", float), ("c", int), ("t", int)]
 observations_v2_dtype = [("chr", "S10"), ("pos", int), ("c", int), ("t", int)]
 observations_dtype = observations_v2_dtype
 windows_dtype = [("chr", "S10"), ("start", int), ("end", int), ("c", int), ("t", int), ("c_nz", int), ("t_nz", int)]
 
-import amethyst_facet as fct
+class DatasetException(Exception):
+    def __init__(self, dataset: "Dataset", message: str):
+        dataset: Dataset
+        message = (
+            f"Problem occurred for dataset with context='{dataset.context}', barcode='{dataset.barcode}', name='{dataset.name}', path='{dataset.path}': "
+            f"{message}"
+        )
+        super().__init__(self)
+
+class InvalidWindowsDtype(DatasetException):
+    def __init__(self, dataset: "Dataset", dtype: List[Tuple[str, type]]):
+        message = (
+            f"Attempted invalid conversion from dtype {dtype} to dtype {windows_dtype}.\n"
+        )
+        super().__init__(dataset, message)
 
 @dc.dataclass
 class Dataset:
@@ -27,12 +43,36 @@ class Dataset:
     def __post_init__(self):
         if isinstance(self.data, pl.DataFrame):
             self.data = self.data.to_numpy(structured=True)
-            if self.format == "obsv1":
-                self.data = self.datav1
-            elif self.format == "obsv2":
-                self.data = self.datav2
-            elif self.format == "windows":
-                self.data = self.data.astype(windows_dtype)
+        for name in ["c", "t", "c_nz", "t_nz"]:
+            if name in self.data.dtype.names:
+                count = sum(np.isnan(self.data[name]))
+                if count:
+                    warnings.warn(
+                        f"{count} nan values discovered in Dataset with context='{self.context}' "
+                        f"barcode='{self.barcode}' name='{self.name}' path='{self.path}' "
+                        f"at field='{name}'. This will be converted to zero."
+                    )
+
+                self.data[name] = np.nan_to_num(self.data[name], nan=0)
+        if self.format == "obsv1":
+            self.data = self.datav1
+        elif self.format == "obsv2":
+            self.data = self.datav2
+        elif self.format == "windows":
+            self.data = self.windows
+
+    def convert_dtype(self, dtype: List[Tuple[str, type]], from_df: pl.DataFrame = None):
+        logging.debug(f"Converting to dtype {dtype}")
+        data = from_df if from_df is not None else self.data
+        if isinstance(data, pl.DataFrame) or data.dtype != dtype:
+            if isinstance(data, pl.DataFrame):
+                data = data.to_numpy(structured=True)
+            new_data = np.zeros(data.shape, dtype=dtype)
+            for name, _ in dtype:
+                new_data[name] = data[name]
+        else:
+            new_data = data
+        return new_data
 
     def pl(self):
         return pl.from_numpy(self.data)
@@ -60,44 +100,62 @@ class Dataset:
     @property
     def datav1(self) -> NDArray:
         data = self.data
+        if self.format == "obsv1":
+            data = self.convert_dtype(observations_v1_dtype, data)
         if self.format == "obsv2":
-            df = pl.from_numpy(data)
-            df = df.with_columns(pct = pl.col.c / (pl.col.c + pl.col.t))
-            df = df.select("chr", "pos", "pct", "c", "t")
-            data = df.to_numpy(structured=True)
-            data = data.astype(observations_v1_dtype)
+            data = pl.from_numpy(data)
+            data = data.with_columns(pct = pl.col.c / (pl.col.c + pl.col.t))
+            data = self.convert_dtype(observations_v1_dtype, data)
+        elif self.format == "windows":
+            data = self.convert_dtype(windows_dtype, data)
         return data
 
     @property
     def datav2(self) -> NDArray:
         data = self.data
         if self.format == "obsv1":
-            df = pl.from_numpy(data)
-            df = df.select("chr", "pos", "c", "t")
-            data = df.to_numpy(structured=True)
-            data = data.astype(observations_v2_dtype)
+            data = self.convert_dtype(observations_v2_dtype, data)
+        if self.format == "obsv2":
+            data = self.convert_dtype(observations_v2_dtype, data)
+        elif self.format == "windows":
+            data = self.convert_dtype(windows_dtype, data)
+        return data
+    
+    @property
+    def windows(self) -> NDArray:
+        data = self.data
+        if self.format == "windows":
+            data = self.convert_dtype(windows_dtype, data)
+        else:
+            raise InvalidWindowsDtype(self, data.dtype)
         return data
 
     def write(self, path: str | Path | None = None, compression: str | None = "gzip", compression_opts: Any | None = 6):
         path = Path(path) if path else self.path
-        exists = path.exists()
-        with fct.h5.open(path) as file:
-            if not exists:
-                # Only add metadata version to file when it's first created.
-                fct.h5.write_version(path)
-
-            file.create_dataset(self.h5path, data=self.datav2, compression=compression, compression_opts=compression_opts)
-            self.check_version(path)
+        self.writev2(path, compression, compression_opts)
 
     def writev1(self, path: str | Path | None = None, how = "barcode", compression: str | None = "gzip", compression_opts: Any | None = 6):
         path = Path(path) if path else self.path
         with fct.h5.open(path) as file:
             h5v1path = f"/{self.context}/{getattr(self, how)}"
+            logging.debug(f"Writing data to {file.filename}::{h5v1path}")
             file.create_dataset(h5v1path, data=self.datav1, compression=compression, compression_opts=compression_opts)
+            logging.debug(f"Finished writing data to {file.filename}::{h5v1path}")
 
     def writev2(self, path: str | Path | None = None, compression: str | None = "gzip", compression_opts: Any | None = 6):
         path = Path(path) if path else self.path
-        self.write(path, compression, compression_opts)
+        exists = path.exists()
+        
+        with fct.h5.open(path) as file:
+            if not exists:
+                # Only add metadata version to file when it's first created.
+                fct.h5.write_version(path)
+            
+            data = self.datav2
+            logging.debug(f"Writing data with dtype={data.dtype} to {file.filename}::{self.h5path}")
+            file.create_dataset(self.h5path, data=data, compression=compression, compression_opts=compression_opts)
+            logging.debug(f"Finished writing data to {file.filename}::{self.h5path}")
+            self.check_version(path)
 
     @property
     def h5path(self):

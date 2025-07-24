@@ -2,8 +2,10 @@ import dataclasses as dc
 import logging
 from pathlib import Path
 from typing import *
+import warnings
 
 import h5py
+from numpy.typing import NDArray
 
 from .dataset import Dataset
 import amethyst_facet as fct
@@ -11,6 +13,17 @@ import amethyst_facet as fct
 class ReaderException(Exception):
     def __init__(self, message: str):
         super().__init__(message)
+
+class ReaderFileMismatch(ReaderException):
+    def __init__(self, class_type: type, path: str | Path, file_format: str):
+        message = (
+            f"Mismatch between amethyst_facet.h5.Reader of type {class_type} and file format '{file_format}' of {path}. "
+            f"This error may occur by attempting to convert a V2 file with 'facet convert', or by attempting to perform "
+            f"other operations such as 'facet agg' on a V1 file. Make sure to convert V1 files using 'facet convert' before "
+            f"running other facet operations on them."
+        )
+        super().__init__(message)
+
 
 @dc.dataclass
 class Reader:
@@ -22,7 +35,7 @@ class Reader:
 
     def obtain(self, item: h5py.Dataset):
         if isinstance(item, h5py.Dataset):
-            return item.name, item[:]
+            return item.file.filename, item.name, item[:]
         else:
             return item
     
@@ -35,9 +48,11 @@ class Reader:
             level: str,
             ignore: Callable = lambda x: False
             ) -> Generator[h5py.Group | h5py.Dataset]:
-        skip = self.skip.get(level, set())
-        only = self.only.get(level, set())
-        logging.debug(f"{self.reader_type} reading from {file_or_group} {level}")
+
+        logging.debug(f"Reader.read(file_or_group={file_or_group}, level={level})")
+        skip = self.skip.get(level, set()) or set()
+        only = self.only.get(level, set()) or set()
+        logging.debug(f"{self.reader_type} reading from {level} {file_or_group}")
         if only:
             only = only.difference(skip)
             logging.debug(f"only={only}\n")
@@ -45,19 +60,20 @@ class Reader:
                 present = only_item in file_or_group
                 ignore_it = ignore(file_or_group[only_item])
                 if present and not ignore_it:
-                    logging.debug(f"Yielding {level} {file_or_group[only_item].name}")
+                    logging.debug(f"Yielding {level} {file_or_group.file.filename}::{file_or_group[only_item].name}")
                     yield self.obtain(file_or_group[only_item])
                 else:
-                    logging.debug(f"Skipped {h5_item} (present={present}, ignored={ignore_it}, type={type(file_or_group[only_item])})")
+                    logging.debug(f"Skipped {file_or_group.file.filename}::{file_or_group[only_item].name} (present: {present}, ignored: {ignore_it})")
         else:
             for h5_item in file_or_group:
+                
                 not_skipped = h5_item not in skip
                 ignore_it = ignore(file_or_group[h5_item])
                 if not_skipped and not ignore_it:
-                    logging.debug(f"Yielding {level} {file_or_group[h5_item].name}")
+                    logging.debug(f"Yielding {level} {file_or_group.file.filename}::{file_or_group[h5_item].name}")
                     yield self.obtain(file_or_group[h5_item])
                 else:
-                    logging.debug(f"Skipped {h5_item} (not_skipped={not_skipped}, ignored={ignore_it}, type={type(file_or_group[h5_item])})")
+                    logging.debug(f"Skipped {file_or_group.file.filename}::{file_or_group[h5_item].name} (not_skipped: {not_skipped}, ignored: {ignore_it})")
 
     def is_observations(self, dataset: h5py.Dataset) -> bool:
         return isinstance(dataset, h5py.Dataset) and all(col in dataset.dtype.names for col in ["chr", "pos"])
@@ -65,10 +81,10 @@ class Reader:
     def is_windows(self, dataset: h5py.Dataset) -> bool:
         return isinstance(dataset, h5py.Dataset) and all(col in dataset.dtype.names for col in ["chr", "start", "end"])
 
-    def file_contexts(self, file: h5py.File):        
+    def file_contexts(self, file: h5py.File):
         def ignore(it):
             if not isinstance(it, h5py.Group):
-                return f"type={type(it)}"
+                return f"not h5py.Group (type={type(it)})"
             elif it.name == "/metadata":
                 return f"name=/metadata"
             return False
@@ -77,13 +93,19 @@ class Reader:
 
     def context_barcodes(self, context: h5py.Group):
         def ignore(it):
+            if isinstance(it, h5py.Dataset) and type(self) == fct.h5.ReaderV2:
+                logging.debug("Raising V1/ReaderV2 mismatch")
+                raise ReaderFileMismatch(type(self), it.file.filename, "V2")
+            elif isinstance(it, h5py.Group) and type(self) == fct.h5.ReaderV1:
+                logging.debug("Raising V2/ReaderV1 mismatch")
+                raise ReaderFileMismatch(type(self), it.file.filename, "V1")
             if not isinstance(it, h5py.Group):
-                return f"type={type(it)}"
+                return f"not h5py.Group (type={type(it)})"
             return False
         yield from self.read(context, "barcodes", ignore)
 
     def contexts(self) -> Generator[h5py.Group]:
-        for path in self.paths:
+        for path in set(self.paths):
             with fct.h5.open(path, mode=self.mode) as file:
                 yield from self.file_contexts(file)
 

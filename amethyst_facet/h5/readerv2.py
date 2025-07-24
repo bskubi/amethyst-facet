@@ -1,6 +1,8 @@
 import dataclasses as dc
+import logging
 from pathlib import Path
 from typing import *
+import warnings
 
 import h5py
 
@@ -18,9 +20,9 @@ class ReaderV2(Reader):
     def barcode_observations(self, barcode: h5py.Group):
         def ignore(it):
             if not isinstance(it, h5py.Dataset):
-                return f"type={type(it)}"
+                return f"not h5py.Dataset (type={type(it)})"
             elif not self.is_observations(it):
-                return f"dtype={it.dtype}"
+                return f"not observations dtype (dtype={it.dtype})"
             return False
         
         yield from self.read(barcode, "observations", ignore)
@@ -28,9 +30,9 @@ class ReaderV2(Reader):
     def barcode_windows(self, barcode: h5py.Group):
         def ignore(it):
             if not isinstance(it, h5py.Dataset):
-                return f"type={type(it)}"
+                return f"not h5py.Dataset (type={type(it)})"
             elif not self.is_windows(it):
-                return f"dtype={it.dtype}"
+                return f"not windows dtype (dtype={it.dtype})"
             return False
     
         yield from self.read(barcode, "windows", ignore)
@@ -39,17 +41,17 @@ class ReaderV2(Reader):
         for context in self.contexts():
             yield from self.context_barcodes(context)
 
-    def create_dataset(self, path, data):
-        path = path.split("/")[1:]
-        context, barcode, name = path
-        return Dataset(context, barcode, name, data, path=path)
+    def create_dataset(self, file_path, h5_path, data):
+        context, barcode, name = h5_path.split("/")[1:]
+        result = Dataset(context, barcode, name, data, path=Path(file_path))
+        return result
 
     def observations(self) -> Generator[Dataset]:
         for barcode in self.barcodes():
-            for path, data in self.barcode_observations(barcode):
-                yield self.create_dataset(path, data)
+            for it in self.barcode_observations(barcode):
+                yield self.create_dataset(*it)
 
     def windows(self) -> Generator[Dataset]:
         for barcode in self.barcodes():
-            for path, data in self.barcode_windows(barcode):
-                yield self.create_dataset(path, data)
+            for it in self.barcode_windows(barcode):
+                yield self.create_dataset(*it)

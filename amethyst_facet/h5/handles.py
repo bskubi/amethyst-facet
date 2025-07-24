@@ -53,6 +53,7 @@ def version_match(path: str | Path):
 def write_version(path: str | Path):
     with open(path) as file:
         file.create_dataset("/metadata/version", data=fct.h5.version)
+        logging.debug(f"Wrote Amethyst /metadata/version='{fct.h5.version}' to {path}")
 
 def close(path: str | Path):
     if path in handles:

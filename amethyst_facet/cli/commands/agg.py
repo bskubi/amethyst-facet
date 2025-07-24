@@ -1,4 +1,6 @@
+import logging
 from typing import *
+import warnings
 
 import click
 
@@ -21,6 +23,8 @@ class AmethystH5Aggregator():
         h5_out, 
         h5_in
     ):
+        if not h5_in:
+            warnings.warn("No paths supplied for [H5_IN], so no aggregations will be computed.")
         parser = CLIOptionsParser()
         paths = parser.combine_paths_globs(h5_in, globs)
         compression, compression_opts = parser.parse_h5py_compression(compression, compression_opts)
@@ -33,6 +37,9 @@ class AmethystH5Aggregator():
 
         windows = variable_windows + uniform_windows
 
+        if not windows:
+            warnings.warn("No window schemes supplied, so no aggregations will be computed.")
+
         skip = {"barcodes":skip_barcodes}
         only = {
             "observations": only_observations,
@@ -40,10 +47,12 @@ class AmethystH5Aggregator():
             "barcodes": only_barcodes
         }
         reader = fct.h5.ReaderV2(paths=paths, skip=skip, only=only)
-        for observations in reader.observations():
+        
+        for observation in reader.observations():
             for window in windows:
-                result = window.aggregate(observations)
+                result = window.aggregate(observation)
                 result.writev2(h5_out, compression, compression_opts)
+        
 
 @click.command
 @input_globs
@@ -80,8 +89,9 @@ class AmethystH5Aggregator():
     )
 )
 @compression
+@verbosity
 @h5_out
-@click.argument("h5_in", nargs=-1)
+@click.argument("h5-in", nargs=-1)
 def agg(
     globs, 
     only_observations, 
@@ -92,6 +102,8 @@ def agg(
     uniform_windows, 
     compression, 
     compression_opts, 
+    verbosity,
+    logfile,
     h5_out, 
     h5_in):
     """Compute window sums over methylation observations stored in Amethyst v2.0.0 format.
@@ -99,6 +111,13 @@ def agg(
     FILENAMES: Amethyst H5 filenames in format /[context]/[barcode]/[observations] to compute window sums.
     Can be specified as a single glob (i.e. *.h5) and will be combined with additional globs specified with -g.
     """
+    fct.logging.config(verbosity, logfile)
+    logging.info(
+        f"Called facet agg with globs={globs}, only_observations={only_observations}, only_contexts={only_contexts}, "
+        f"only_barcodes={only_barcodes}, skip_barcodes={skip_barcodes}, variable_windows={variable_windows}, "
+        f"uniform_windows={uniform_windows}, compression={compression}, compression_opts={compression_opts}, verbosity={verbosity}, "
+        f"logfile={logfile}, h5_out={h5_out}, h5_in={h5_in}."
+    )
     aggregator = AmethystH5Aggregator()
     aggregator.aggregate(
         globs, 

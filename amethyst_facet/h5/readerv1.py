@@ -16,45 +16,44 @@ class ReaderV1(Reader):
     default_name: str = "1"
     reader_type: str = "ReaderV1"
 
-    def create_dataset(self, path, data):
-        path = path.split("/")[1:]
-        context, barcode = path
-        name = self.default_name or path
-        return Dataset(context, barcode, name, data, path=path)
+    def create_dataset(self, file_path, h5_path, data):
+        context, barcode = h5_path.split("/")[1:]
+        name = self.default_name or h5_path
+        return Dataset(context, barcode, name, data, path=Path(file_path))
 
     def barcodes(self):
         def ignore(it):
             if not isinstance(it, h5py.Dataset):
-                return f"type={type(it)}"
+                return f"not h5py.Dataset (type={type(it)})"
             return False
 
         for context in self.contexts():
-            for path, data in self.read(context, "barcodes", ignore):
-                yield self.create_dataset(path, data)
+            for it in self.read(context, "barcodes", ignore):
+                yield self.create_dataset(*it)
 
     def observations(self):
         def ignore(it):
             if not isinstance(it, h5py.Dataset):
-                return f"type={type(it)}"
+                return f"not h5py.Dataset(type={type(it)})"
             elif not self.is_observations(it):
-                return f"dtype={it.dtype}"
+                return f"not observations dtype (dtype={it.dtype})"
             return False
 
         for context in self.contexts():
-            for path, data in self.read(context, "barcodes", ignore):
-                yield self.create_dataset(path, data)
+            for it in self.read(context, "barcodes", ignore):
+                yield self.create_dataset(*it)
 
     def windows(self):
         def ignore(it):
             if not isinstance(it, h5py.Dataset):
-                return f"type={type(it)}"
+                return f"not h5py.Dataset (type={type(it)})"
             elif not self.is_windows(it):
-                return f"dtype={it.dtype}"
+                return f"not windows dtype (dtype={it.dtype})"
             return False
 
         for context in self.contexts():
-            for path, data in self.read(context, "barcodes", ignore):
-                yield self.create_dataset(path, data)
+            for it in self.read(context, "barcodes", ignore):
+                yield self.create_dataset(*it)
 
     def barcode_observations(self, barcode: h5py.Group):
         raise NotImplementedError("Not implemented in ReaderV1 as all barcodes are Datasets in Amethyst file format v1.")

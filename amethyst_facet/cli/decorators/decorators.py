@@ -72,7 +72,7 @@ def h5_subsets(f):
     return f
 
 h5_out = click.option(
-    "--h5_out", "-o", "--out", 
+    "--h5-out", "-o", "--out", 
     type=str,
     default = None,
     show_default=True,
