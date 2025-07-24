@@ -50,20 +50,25 @@ class Reader:
             ) -> Generator[h5py.Group | h5py.Dataset]:
 
         logging.debug(f"Reader.read(file_or_group={file_or_group}, level={level})")
-        skip = self.skip.get(level, set()) or set()
-        only = self.only.get(level, set()) or set()
+        skip = set(self.skip.get(level, set())) or set()
+        only = set(self.only.get(level, set())) or set()
         logging.debug(f"{self.reader_type} reading from {level} {file_or_group}")
         if only:
             only = only.difference(skip)
             logging.debug(f"only={only}\n")
             for only_item in only:
                 present = only_item in file_or_group
-                ignore_it = ignore(file_or_group[only_item])
+                if present:
+                    ignore_it = ignore(file_or_group[only_item])
+                else:
+                    ignore_it = True
                 if present and not ignore_it:
                     logging.debug(f"Yielding {level} {file_or_group.file.filename}::{file_or_group[only_item].name}")
                     yield self.obtain(file_or_group[only_item])
-                else:
+                elif present:
                     logging.debug(f"Skipped {file_or_group.file.filename}::{file_or_group[only_item].name} (present: {present}, ignored: {ignore_it})")
+                elif not present:
+                    logging.debug(f"Skipped {file_or_group.file.filename}::{only_item} (present: {present}, ignored: {ignore_it})")
         else:
             for h5_item in file_or_group:
                 

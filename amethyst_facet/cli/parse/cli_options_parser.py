@@ -1,6 +1,7 @@
 import glob
 import io
 import itertools
+import logging
 from pathlib import Path
 from typing import *
 import h5py
@@ -103,9 +104,13 @@ class CLIOptionsParser:
         if filename.strip():
             if not Path(filename).exists:
                 raise MissingBarcodeFile(filename)
-
+            
             try:
-                result = [r.strip() for r in open(filename).readlines()]
+                with open(filename) as file:
+                    lines = file.readlines()
+                    logging.debug(lines)
+                    result = [r.strip() for r in lines]
+                    logging.debug(result)
             except:
                 raise FailedReadBarcodeFile(filename)
         return result
