@@ -14,7 +14,7 @@ class VariableWindowsParserException(Exception):
 class InvalidFormat(VariableWindowsParserException):
     def __init__(self, arg: str, format: str):
         message = (
-            f"Attempted to use format '{format}' but was unable to use it to parse argument."
+            f"Attempted to use format '{format}' but was unable to use it to parse argument. "
             "Hint: avoid using the following symbols in your name or path: {}:+ "
             "and do not surround the name or path in curly braces (i.e. use "
             "-v name=path/to/windows.tsv, not -v {name}={path/to/windows.tsv})"
@@ -38,7 +38,7 @@ class VariableWindowsParser:
         try:
             parsed = parse.parse(format, arg).named
             path = Path(parsed["path"])
-            default_name = str(path.name.removesuffix(path.suffix()))
+            default_name = str(path.name.removesuffix(path.suffix))
             name = parsed.get("name", default_name)
         except Exception as e:
             raise InvalidFormat(arg, format) from e

@@ -4,4 +4,4 @@ import click
 def version():
     """Print version and exit
     """
-    print("Facet v. 1.1.1 (July 24, 2025)")
+    print("Facet v. 1.1.5 (July 24, 2025)")

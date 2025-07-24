@@ -146,19 +146,15 @@ def test_agg_v2_to_v2_append_e2e(cleanup_temp):
     runner = CliRunner()
     path_strings = [str(p) for p in paths]
     runner.invoke(facet, ["agg", "-u", f"{size}:{step}+{offset}", "--verbosity", "debug", *path_strings])
-    # reader = fct.h5.ReaderV2(paths=paths)
-    # windows = list(reader.windows())
-    # assert len(windows) == (len(contexts)*len(barcodes)*len(names))
-    # for windows in windows:
-    #     values = windows.pl()
-    #     values = values.cast({"chr": pl.String})
-    #     assert values.equals(expected), f"{values} != {expected}"
+    reader = fct.h5.ReaderV2(paths=paths)
+    windows = list(reader.windows())
+    assert len(windows) == (len(contexts)*len(barcodes)*len(names))
+    for windows in windows:
+        values = windows.pl()
+        values = values.cast({"chr": pl.String})
+        assert values.equals(expected), f"{values} != {expected}"
 
 def test_agg_v2_to_v2_h5_out_e2e(cleanup_temp):
-    size=2
-    step=1
-    offset=1
-
     expected = pl.DataFrame({
         "chr":   [1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2],
         "start": [0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6],
@@ -181,7 +177,7 @@ def test_agg_v2_to_v2_h5_out_e2e(cleanup_temp):
 
     runner = CliRunner()
     path_strings = [str(p) for p in paths]
-    runner.invoke(facet, ["agg", "-u", f"{size}:{step}+{offset}", "--verbosity", "debug", "--h5-out", h5_out, *path_strings])
+    runner.invoke(facet, ["agg", "-u", f"2:1+1", "--verbosity", "debug", "--h5-out", h5_out, *path_strings])
     reader = fct.h5.ReaderV2(paths=[h5_out])
     windows = list(reader.windows())
     assert len(windows) == (len(contexts)*len(barcodes)*len(names))
@@ -207,3 +203,45 @@ def test_agg_v1_to_v2_h5_out_e2e(cleanup_temp):
         result = runner.invoke(facet, ["agg", "-u", f"2:1+1", "--h5-out", h5_out, *path_strings])
         if result.exception:
             raise result.exception
+        
+def test_variable_windows_aggregator_e2e(cleanup_temp):
+    temp = Path("tests/assets/temp")
+    expected = pl.DataFrame({
+        "chr":   [1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2],
+        "start": [0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6],
+        "end":   [2, 3, 4, 5, 6, 7, 8, 2, 3, 4, 5, 6, 7, 8],
+        "c":     [0, 1, 3, 2, 1, 3, 2, 0, 1, 3, 2, 1, 3, 2],
+        "t":     [1, 1, 1, 2, 3, 4, 2, 1, 1, 1, 2, 3, 4, 2],
+        "c_nz":  [0, 1, 2, 1, 1, 2, 1, 0, 1, 2, 1, 1, 2, 1],
+        "t_nz":  [1, 1, 1, 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 1]
+    }).cast({"chr": pl.String})
+
+    windows = pl.DataFrame({
+        "chr":   [1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2],
+        "start": [0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6],
+        "end":   [2, 3, 4, 5, 6, 7, 8, 2, 3, 4, 5, 6, 7, 8]
+    })
+    windows.write_csv(temp / "windows.tsv", separator = "\t")
+
+
+    observations = observations_data2()
+    contexts = ["CG", "CH"]
+    barcodes = ["barcode1", "barcode2", "barcode3", "barcode4"]
+    names = ["1"]
+    paths = [temp / "file1.h5", temp / "file2.h5"]
+    h5_out = str(temp / "output.h5")
+
+    write_h5_observations(contexts=contexts, barcodes=barcodes, names=names, datas=[observations], paths=paths)
+
+    runner = CliRunner()
+    path_strings = [str(p) for p in paths]
+    result = runner.invoke(facet, ["agg", "-v", f"{str(temp / 'windows.tsv')}", "--verbosity", "debug", "--h5-out", h5_out, *path_strings])
+    if result.exception:
+        raise result.exception
+    reader = fct.h5.ReaderV2(paths=[h5_out])
+    windows = list(reader.windows())
+    assert len(windows) == (len(contexts)*len(barcodes)*len(names))
+    for windows in windows:
+        values = windows.pl()
+        values = values.cast({"chr": pl.String})
+        assert values.equals(expected), f"{values} != {expected}"

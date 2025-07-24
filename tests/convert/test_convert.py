@@ -16,7 +16,7 @@ def test_convert(cleanup_temp):
         dtype = fct.h5.observations_v2_dtype
     )
     dataset1 = fct.h5.Dataset("CG", "barcode1", "1", data=data)
-    dataset2 = fct.h5.Dataset("CH", "barcode2", "2", data=data)
+    dataset2 = fct.h5.Dataset("CH", "barcode2", "1", data=data)
     base = Path("tests/assets/temp")
     dataset1.writev1(base/"file1.h5")
     dataset2.writev1(base/"file2.h5")

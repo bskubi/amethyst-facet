@@ -65,7 +65,7 @@ class AmethystH5Aggregator():
     help = "Name of observations dataset to aggregate in Amethyst H5 files at /[context]/[barcode]/[observations] with columns (chr, pos, c, t)"
 )
 @click.option(
-    "--variable-windows", "--variable", "--windows", "--win", "-w",
+    "--variable-windows", "--variable", "--windows", "--win", "-v",
     multiple=True,
     type=str,
     help = (

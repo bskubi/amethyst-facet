@@ -1,7 +1,7 @@
 import click
 
 verbosity_option = click.option(
-    "-v", "--verbosity",
+    "--verbosity",
     type=click.Choice(["silent", "debug", "info", "warning", "error", "critical", "all"]),
     default="warning",
     show_default=True,
@@ -9,7 +9,7 @@ verbosity_option = click.option(
 )
 
 logfile_option = click.option(
-    "-l", "--logfile", "--log",
+    "--logfile", "--log",
     type=str,
     default=None,
     show_default=True,

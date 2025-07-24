@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "amethyst-facet"
-version = "1.1.3"
+version = "1.1.5"
 description = "Compute window aggregations and alter contents of Amethyst HDF5 files"
 authors = ["Ben Skubi <skubi@ohsu.edu>"]
 readme = "README.md"
@@ -16,6 +16,7 @@ duckdb = "*"
 pytest = "*"
 hypothesis = "*"
 pandas = "*"
+pyarrow = "*"
 
 [tool.poetry.scripts]
 facet = "amethyst_facet.cli.commands.facet:facet"
