@@ -2,12 +2,12 @@ import logging
 
 import click
 
-import amethyst_facet as fct
 from ..parse import CLIOptionsParser
 from ..decorators import *
 
 class AmethystH5Converter:
     def convert(self, globs, observations, windows, only_contexts, only_barcodes, skip_barcodes, compression, compression_opts, h5_out, h5_in):
+        import amethyst_facet as fct
         parser = CLIOptionsParser()
         compression, compression_opts = parser.parse_h5py_compression(compression, compression_opts)
         paths = parser.combine_paths_globs(h5_in, globs)
@@ -55,6 +55,7 @@ def convert(globs, observations, windows, only_contexts, only_barcodes, skip_bar
     If more than one input file is specified in [H5_IN] and/or via the -g option, they are all appended to [H5_OUT].
     If the same /context/barcode dataset is found in two or more input files, the conversion fails.
     """
+    import amethyst_facet as fct
     fct.logging.config(verbosity, logfile)
     logging.info(
         f"Called facet convert with globs={globs}, observations={observations}, only_contexts={only_contexts}, "

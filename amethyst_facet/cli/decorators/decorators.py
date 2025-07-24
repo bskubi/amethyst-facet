@@ -52,7 +52,7 @@ only_contexts = click.option(
     "--only-contexts", "--only-ctx", "--contexts", "-c",
     type=str,
     multiple=True,
-    help="Only dump these contexts. Multiple can be specified (i.e. '-c CG -c CH') If none given, uses all contexts."
+    help="Only use these contexts. Multiple can be specified (i.e. '-c CG -c CH') If none given, uses all contexts."
 )
 only_barcodes = click.option(
     "--only-barcodes", "--only-bc", "--requirebc",

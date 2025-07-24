@@ -3,9 +3,9 @@ from pathlib import Path
 from click.testing import CliRunner
 import numpy as np
 import amethyst_facet as fct
+from amethyst_facet.cli.commands.facet import facet
 
 from ..util import cleanup_temp
-from amethyst_facet.cli.commands.facet import facet
 
 def test_convert(cleanup_temp):
     data = np.array(

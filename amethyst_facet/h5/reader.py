@@ -33,6 +33,14 @@ class Reader:
     mode: str = "a"
     reader_type: str = "Reader"
 
+    def __post_init__(self):
+        for k in self.skip:
+            if self.skip[k] is None:
+                self.skip[k] = set()
+        for k in self.only:
+            if self.only[k] is None:
+                self.only[k] = set()
+
     def obtain(self, item: h5py.Dataset):
         if isinstance(item, h5py.Dataset):
             return item.file.filename, item.name, item[:]
@@ -58,6 +66,7 @@ class Reader:
             logging.debug(f"only={only}\n")
             for only_item in only:
                 present = only_item in file_or_group
+                
                 if present:
                     ignore_it = ignore(file_or_group[only_item])
                 else:

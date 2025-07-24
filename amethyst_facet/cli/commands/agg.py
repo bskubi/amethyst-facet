@@ -6,7 +6,6 @@ import click
 
 from ..parse import CLIOptionsParser, VariableWindowsParser, UniformWindowsParser
 from ..decorators import *
-import amethyst_facet as fct
 
 class AmethystH5Aggregator():
     def aggregate(
@@ -23,6 +22,7 @@ class AmethystH5Aggregator():
         h5_out, 
         h5_in
     ):
+        import amethyst_facet as fct
         if not h5_in:
             warnings.warn("No paths supplied for [H5_IN], so no aggregations will be computed.")
         parser = CLIOptionsParser()
@@ -111,6 +111,7 @@ def agg(
     FILENAMES: Amethyst H5 filenames in format /[context]/[barcode]/[observations] to compute window sums.
     Can be specified as a single glob (i.e. *.h5) and will be combined with additional globs specified with -g.
     """
+    import amethyst_facet as fct
     fct.logging.config(verbosity, logfile)
     logging.info(
         f"Called facet agg with globs={globs}, only_observations={only_observations}, only_contexts={only_contexts}, "

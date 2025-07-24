@@ -34,7 +34,7 @@ def config(verbosity, logfile):
             f"Uname: {platform.uname()}",
             f"System: {platform.system()}",
             f"Processor: {platform.processor()}",
-            f"Amethyst version: {fct.version}"
+            f"Amethyst version: {fct.facet_version}"
         ])
         seplength = len(configstr)
         sep = "-"*seplength
