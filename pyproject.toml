@@ -9,10 +9,12 @@ readme = "README.md"
 python = "^3.12"
 numpy = "<=1.26.4"
 click = "*"
-polars = "*"
+polars = "=1.31.0"
 parse = "*"
 h5py = "*"
 duckdb = "*"
+pytest = "*"
+hypothesis = "*"
 
 [tool.poetry.scripts]
 facet = "amethyst_facet.cli.commands.facet:facet"
