@@ -11,10 +11,10 @@ import polars as pl
 
 import amethyst_facet as fct
 
-observations_v1_dtype = [("chr", "S10"), ("pos", int), ("pct", float), ("c", int), ("t", int)]
-observations_v2_dtype = [("chr", "S10"), ("pos", int), ("c", int), ("t", int)]
+observations_v1_dtype = [("chr", "S10"), ("pos", "<i8"), ("pct", "<f8"), ("c", "<i8"), ("t", "<i8")]
+observations_v2_dtype = [("chr", "S10"), ("pos", "<i8"), ("c", "<i8"), ("t", "<i8")]
 observations_dtype = observations_v2_dtype
-windows_dtype = [("chr", "S10"), ("start", int), ("end", int), ("c", int), ("t", int), ("c_nz", int), ("t_nz", int)]
+windows_dtype = [("chr", "S10"), ("start", "<i8"), ("end", "<i8"), ("c", "<i8"), ("t", "<i8"), ("c_nz", "<i8"), ("t_nz", "<i8")]
 
 class DatasetException(Exception):
     def __init__(self, dataset: "Dataset", message: str):

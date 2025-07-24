@@ -1,7 +1,11 @@
 from pathlib import Path
+
+from click.testing import CliRunner
 import numpy as np
 import amethyst_facet as fct
+
 from ..util import cleanup_temp
+from amethyst_facet.cli.commands.facet import facet
 
 def test_convert(cleanup_temp):
     data = np.array(
@@ -24,3 +28,52 @@ def test_convert(cleanup_temp):
     readerv2 = fct.h5.ReaderV2(paths=[base/"converted.h5"])
     for obs in readerv2.observations():
         assert obs.format == "obsv2"
+
+def test_convert_e2e(cleanup_temp):
+    fct.logging.config("debug", None)
+    data = np.array(
+        [
+            ("1", 1, 1, 1),
+            ("2", 1, 0, 1)
+        ],
+        dtype = fct.h5.observations_v2_dtype
+    )
+    base = Path("tests/assets/temp")
+    file1 = base / "file1.h5"
+    file2 = base / "file2.h5"
+    paths = [file1, file2]
+    datasets =[
+        fct.h5.Dataset("CG", "barcode1", "1", data, file1),
+        fct.h5.Dataset("CG", "barcode2", "1", data, file1),
+        fct.h5.Dataset("CH", "barcode1", "1", data, file1),
+        fct.h5.Dataset("CH", "barcode2", "1", data, file1),
+        fct.h5.Dataset("CG", "barcode3", "1", data, file2),
+        fct.h5.Dataset("CG", "barcode4", "1", data, file2),
+        fct.h5.Dataset("CH", "barcode3", "1", data, file2),
+        fct.h5.Dataset("CH", "barcode4", "1", data, file2)
+    ]
+    
+    for dataset in datasets:
+        dataset.writev1()
+
+    h5_out = base / "converted.h5"
+
+    runner = CliRunner()
+    path_strings = [str(p) for p in paths]
+    result = runner.invoke(facet, ["convert", str(h5_out), *path_strings])
+    if result.exception:
+        raise result.exception
+    
+
+    reader = fct.h5.ReaderV2(paths=[h5_out])
+    observations = list(reader.observations())
+    assert len(observations) == 8
+    contexts = sorted([o.context for o in observations])
+    barcodes = sorted([o.barcode for o in observations])
+    names = sorted([o.name for o in observations])
+    dtypes = [o.data.dtype for o in observations]
+    assert contexts == ["CG"]*4 + ["CH"]*4
+    assert barcodes == ["barcode1"]*2 + ["barcode2"]*2 + ["barcode3"]*2 + ["barcode4"]*2
+    assert names == ["1"]*8
+    assert dtypes == [fct.h5.dataset.observations_v2_dtype]*8
+        

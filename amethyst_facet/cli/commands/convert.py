@@ -1,3 +1,5 @@
+import logging
+
 import click
 
 import amethyst_facet as fct
@@ -54,5 +56,11 @@ def convert(globs, observations, windows, only_contexts, only_barcodes, skip_bar
     If the same /context/barcode dataset is found in two or more input files, the conversion fails.
     """
     fct.logging.config(verbosity, logfile)
+    logging.info(
+        f"Called facet convert with globs={globs}, observations={observations}, only_contexts={only_contexts}, "
+        f"only_barcodes={only_barcodes}, skip_barcodes={skip_barcodes}, "
+        f"compression={compression}, compression_opts={compression_opts}, verbosity={verbosity}, "
+        f"logfile={logfile}, h5_out={h5_out}, h5_in={h5_in}."
+    )
     converter = AmethystH5Converter()
     converter.convert(globs, observations, windows, only_contexts, only_barcodes, skip_barcodes, compression, compression_opts, h5_out, h5_in)
