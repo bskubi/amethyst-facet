@@ -19,7 +19,7 @@ class Formats:
 
     @classmethod
     @validate_call
-    def as_type(cls, t: Type[str|int], types: dict[type,Any]) -> Any:
+    def to_type(cls, t: Type[str|int], types: dict[type,Any]) -> Any:
         """Convert Python type to library-specific dtype
         """
         if t in types:
@@ -28,17 +28,17 @@ class Formats:
 
     @classmethod
     @validate_call
-    def as_numpy(cls, t: Type[str|int]) -> Any:
+    def to_numpy(cls, t: Type[str|int]) -> Any:
         """Convert Python type to numpy-specific dtype
         """
-        return cls.as_type(t, cls.np_types)
+        return cls.to_type(t, cls.np_types)
     
     @classmethod
     @validate_call
-    def as_polars(cls, t: Type[str|int]) -> Any:
+    def to_polars(cls, t: Type[str|int]) -> Any:
         """Convert Python type to polars-specific dtype
         """
-        return cls.as_type(t, cls.pl_types)
+        return cls.to_type(t, cls.pl_types)
 
 
 class Schema:
@@ -83,8 +83,8 @@ class Schema:
         # Convert base schema to desired format
         match format:
             case "base": formatter = lambda x: x
-            case "numpy": formatter = Formats.as_numpy
-            case "polars": formatter = Formats.as_polars
+            case "numpy": formatter = Formats.to_numpy
+            case "polars": formatter = Formats.to_polars
             case _: raise NotImplementedError(f"Format {format} not implemented.")
 
         # Convert the base schema to the desired format
@@ -92,19 +92,52 @@ class Schema:
         return formatted_schema
 
     @classmethod
+    def detect(cls, data: np.ndarray | pl.DataFrame) -> str:
+        """Autodetect bp or agg schema from ndarray or DataFrame
+        """
+        # Uniform interface to get schema from input object
+        if isinstance(data, np.ndarray):
+            format = "numpy"
+            get_schema = lambda arr: arr.dtype
+        elif isinstance(data, pl.DataFrame):
+            format = "polars"
+            get_schema = lambda df: [(k, v) for k, v in df.schema.items()]
+        else:
+            raise NotImplementedError(f"Cannot detect schema for object of type {type(data)}:\n{data}")
+
+        # Get the schema
+        schema = get_schema(data)
+
+        # Try the different schemas and see if there is a match
+        for schema_type in ["bp", "agg"]:
+            other_schema = cls.create(schema_type, format)
+            if schema == other_schema:
+                return schema_type
+        
+        raise ValueError(f"Unknown schema {schema} detected in input of type {type(data)}:\n{data}")
+
+    @classmethod
     @validate_call(config=dict(arbitrary_types_allowed=True))
-    def as_polars(cls, data: np.ndarray, schema: Literal["bp", "agg"]) -> pl.DataFrame:
+    def get_schema(cls, data: pl.DataFrame | np.ndarray, schema: Literal["detect", "bp", "agg"] = "detect") -> list[tuple[str, Any]]:
+        return cls.detect(data) if schema == "detect" else schema
+
+    @classmethod
+    @validate_call(config=dict(arbitrary_types_allowed=True))
+    def to_polars(cls, data: np.ndarray, schema: Literal["detect", "bp", "agg"] = "detect") -> pl.DataFrame:
         """Autodetect input type and convert to polars DataFrame
         """
-        schema = cls.create(schema=schema, format="polars")
+        
+        schema = cls.create(schema=cls.get_schema(data, schema), format="polars")
         return pl.from_numpy(data, schema=schema)
     
     @classmethod
     @validate_call(config=dict(arbitrary_types_allowed=True))
-    def as_numpy(cls, data: pl.DataFrame, schema: Literal["bp", "agg"]) -> np.recarray:
+    def to_numpy(cls, data: pl.DataFrame, schema: Literal["detect", "bp", "agg"] = "detect") -> np.recarray:
         """Autodetect input type and convert to numpy recarray
         """
-        schema = cls.create(schema=schema, format="numpy")
+        schema = cls.create(schema=cls.get_schema(data, schema), format="numpy")
         return data.to_numpy(structured=True).astype(schema)
 
 
+            
+            

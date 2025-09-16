@@ -20,9 +20,9 @@ def test_roundtrip_convert(df1, schema):
     """Test round-trip conversions between bp-format DataFrame and recarray
     """
     # Run round-trip conversions
-    arr1 = fct.Schema.as_numpy(df1, schema = schema)
-    df2 = fct.Schema.as_polars(arr1, schema = schema)
-    arr2 = fct.Schema.as_numpy(df2, schema = schema)
+    arr1 = fct.Schema.to_numpy(df1)
+    df2 = fct.Schema.to_polars(arr1)
+    arr2 = fct.Schema.to_numpy(df2)
 
     # Check dtypes, i.e. for c vs. t column order mismatch
     assert df1.schema == df2.schema, f"DataFrame schemas do not match: {df1.schema}, {df2.schema}"
