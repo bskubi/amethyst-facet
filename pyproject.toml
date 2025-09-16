@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "amethyst-facet"
-version = "1.1.5"
+version = "1.1.10"
 description = "Compute window aggregations and alter contents of Amethyst HDF5 files"
 authors = ["Ben Skubi <skubi@ohsu.edu>"]
 readme = "README.md"
