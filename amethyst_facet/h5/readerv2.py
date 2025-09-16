@@ -37,7 +37,7 @@ class ReaderV2(Reader):
     
         yield from self.read(barcode, "windows", ignore)
 
-    def barcodes(self) -> Generator[h5py.Group]:
+    def barcodes(self) -> Generator[h5py.Group, None, None]:
         for context in self.contexts():
             yield from self.context_barcodes(context)
 
@@ -46,12 +46,12 @@ class ReaderV2(Reader):
         result = Dataset(context, barcode, name, data, path=Path(file_path))
         return result
 
-    def observations(self) -> Generator[Dataset]:
+    def observations(self) -> Generator[Dataset, None, None]:
         for barcode in self.barcodes():
             for it in self.barcode_observations(barcode):
                 yield self.create_dataset(*it)
 
-    def windows(self) -> Generator[Dataset]:
+    def windows(self) -> Generator[Dataset, None, None]:
         for barcode in self.barcodes():
             for it in self.barcode_windows(barcode):
                 yield self.create_dataset(*it)

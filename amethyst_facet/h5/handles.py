@@ -63,7 +63,7 @@ def close(path: str | Path):
 
 
 @contextmanager
-def open(path: str | Path, mode: str = "a", *args, **kwargs) -> Generator[h5py.File]:
+def open(path: str | Path, mode: str = "a", *args, **kwargs) -> Generator[h5py.File, None, None]:
     try:
         if path not in handles:
             file = h5py.File(path, mode=mode, *args, **kwargs)

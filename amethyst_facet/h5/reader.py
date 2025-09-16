@@ -55,7 +55,7 @@ class Reader:
             file_or_group: h5py.File | h5py.Group, 
             level: str,
             ignore: Callable = lambda x: False
-            ) -> Generator[h5py.Group | h5py.Dataset]:
+            ) -> Generator[h5py.Group | h5py.Dataset, None, None]:
 
         logging.debug(f"Reader.read(file_or_group={file_or_group}, level={level})")
         skip = set(self.skip.get(level, set())) or set()
@@ -118,7 +118,7 @@ class Reader:
             return False
         yield from self.read(context, "barcodes", ignore)
 
-    def contexts(self) -> Generator[h5py.Group]:
+    def contexts(self) -> Generator[h5py.Group, None, None]:
         for path in set(self.paths):
             with fct.h5.open(path, mode=self.mode) as file:
                 yield from self.file_contexts(file)
@@ -129,11 +129,11 @@ class Reader:
     def barcode_windows(self, barcode: h5py.Group):
         self.not_implemented_error()
 
-    def barcodes(self) -> Generator[h5py.Group]:
+    def barcodes(self) -> Generator[h5py.Group, None, None]:
         self.not_implemented_error()
 
-    def observations(self) -> Generator[Dataset]:
+    def observations(self) -> Generator[Dataset, None, None]:
         self.not_implemented_error()
 
-    def windows(self) -> Generator[Dataset]:
+    def windows(self) -> Generator[Dataset, None, None]:
         self.not_implemented_error()
