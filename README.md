@@ -5,7 +5,7 @@
 
 Install `facet.py` dependencies using mamba:
 ```
-mamba create -n facet pip && pip install amethyst-facet
+mamba create -n facet pip && mamba activate facet && pip install amethyst-facet
 ```
 
 ### Ingest base-pair-resolution .parquet and .cov files
