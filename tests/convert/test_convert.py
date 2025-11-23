@@ -188,3 +188,7 @@ def test_convert_e2e3(cleanup_temp):
         assert dtypes == [fct.h5.dataset.observations_v2_dtype]*8
     except Exception as e:
         raise e
+
+def test_calls2h5(cleanup_temp):
+    base = Path("tests/assets/temp")
+    

@@ -6,7 +6,10 @@ from .convert import convert
 from .delete import delete
 from .version import version
 
+from loguru import logger
+
 @click.group()
+@logger.catch
 def facet():
     pass
 

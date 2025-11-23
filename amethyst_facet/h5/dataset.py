@@ -8,6 +8,7 @@ import numpy as np
 from numpy.typing import NDArray
 import pandas as pd
 import polars as pl
+from loguru import logger
 
 import amethyst_facet as fct
 
@@ -47,10 +48,10 @@ class Dataset:
             if name in self.data.dtype.names:
                 count = sum(np.isnan(self.data[name]))
                 if count:
-                    warnings.warn(
-                        f"{count} nan values discovered in Dataset with context='{self.context}' "
-                        f"barcode='{self.barcode}' name='{self.name}' path='{self.path}' "
-                        f"at field='{name}'. This will be converted to zero."
+                    logger.info(
+                        "{} nan values discovered in Dataset for {}. This will be converted to zero.",
+                        count,
+                        self
                     )
 
                 self.data[name] = np.nan_to_num(self.data[name], nan=0)
@@ -138,11 +139,11 @@ class Dataset:
         path = Path(path) if path else self.path
         with fct.h5.open(path) as file:
             h5v1path = f"/{self.context}/{getattr(self, how)}"
-            logging.debug(f"Writing data to {file.filename}::{h5v1path}")
+            logger.info("Writing data to {}::{}", file.filename, h5v1path)
             file.create_dataset(h5v1path, data=self.datav1, compression=compression, compression_opts=compression_opts)
-            logging.debug(f"Finished writing data to {file.filename}::{h5v1path}")
+            logger.info("Finished writing data to {}::{}", file.filename, h5v1path)
 
-    def writev2(self, path: str | Path | None = None, compression: str | None = "gzip", compression_opts: Any | None = 6):
+    def writev2(self, path: str | Path | None = None, compression: str | None = "gzip", compression_opts: Any | None = 6, display_sample = False):
         path = Path(path) if path else self.path
         exists = path.exists()
         
@@ -152,9 +153,14 @@ class Dataset:
                 fct.h5.write_version(path)
             
             data = self.datav2
-            logging.debug(f"Writing data with dtype={data.dtype} to {file.filename}::{self.h5path}")
+            logger.info("Writing data with dtype={} to {}::{}", data.dtype, file.filename, self.h5path)
             file.create_dataset(self.h5path, data=data, compression=compression, compression_opts=compression_opts)
-            logging.debug(f"Finished writing data to {file.filename}::{self.h5path}")
+            if display_sample:
+                df = pl.from_numpy(file[self.h5path][:])
+                with pl.Config(tbl_rows=100):
+                    df_string = str(df)
+                logger.info("First sample of current window schema as loaded from H5 file:\n{}", df_string)
+            logging.debug("Finished writing data to {}::{}", file.filename, self.h5path)
             self.check_version(path)
 
     @property

@@ -5,3 +5,6 @@ logfile.txt
 *.pyc
 __pycache__/
 .hypothesis
+*.cov
+*.cov.gz
+*.log

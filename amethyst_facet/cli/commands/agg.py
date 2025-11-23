@@ -48,10 +48,12 @@ class AmethystH5Aggregator():
         }
         reader = fct.h5.ReaderV2(paths=paths, skip=skip, only=only)
         
-        for observation in reader.observations():
-            for window in windows:
+        for window in windows:
+            display_sample = True
+            for observation in reader.observations():
                 result = window.aggregate(observation)
-                result.writev2(h5_out, compression, compression_opts)
+                result.writev2(h5_out, compression, compression_opts, display_sample = display_sample)
+                display_sample = False
         
 
 @click.command
@@ -89,7 +91,6 @@ class AmethystH5Aggregator():
     )
 )
 @compression
-@verbosity
 @h5_out
 @click.argument("h5-in", nargs=-1)
 def agg(
@@ -101,24 +102,27 @@ def agg(
     variable_windows, 
     uniform_windows, 
     compression, 
-    compression_opts, 
-    verbosity,
-    logfile,
+    compression_opts,
     h5_out, 
     h5_in):
     """Compute window sums over methylation observations stored in Amethyst v2.0.0 format.
 
-    FILENAMES: Amethyst H5 filenames in format /[context]/[barcode]/[observations] to compute window sums.
-    Can be specified as a single glob (i.e. *.h5) and will be combined with additional globs specified with -g.
+    Windows are only written if they contain at least one observation.
+
+    \b
+    Examples:
+
+    \b
+    Compute uniform 10kb windows over all datasets at /context/barcode/1
+    and save in cells.h5 /context/barcode/10000
+    facet agg --uniform-windows 10000=10000+0 cells.h5 cells.h5
+
+    \b
+    Compute 10kb windows with all windows with a 5kb step between windows
+    with the first window starting at bp position 1 over all datasets
+    at /context/barcode/1 and save in cells.h5 at /context/barcode/10000:5000+1
+    facet agg --uniform-windows 10000:5000
     """
-    import amethyst_facet as fct
-    fct.logging.config(verbosity, logfile)
-    logging.info(
-        f"Called facet agg with globs={globs}, only_observations={only_observations}, only_contexts={only_contexts}, "
-        f"only_barcodes={only_barcodes}, skip_barcodes={skip_barcodes}, variable_windows={variable_windows}, "
-        f"uniform_windows={uniform_windows}, compression={compression}, compression_opts={compression_opts}, verbosity={verbosity}, "
-        f"logfile={logfile}, h5_out={h5_out}, h5_in={h5_in}."
-    )
     aggregator = AmethystH5Aggregator()
     aggregator.aggregate(
         globs, 

@@ -22,7 +22,6 @@ def dense_uniform_observations(draw):
         state["offset"] = offset
         observations_count = draw(st.integers(min_value=0, max_value=1000))*size
         state["observations_count"] = observations_count
-        
         c_val = draw(st.integers(min_value=0, max_value=1000))
         t_val = draw(st.integers(min_value=0, max_value=1000))
         chr = ["chr1"]*observations_count

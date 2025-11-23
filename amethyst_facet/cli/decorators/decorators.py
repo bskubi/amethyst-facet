@@ -1,26 +1,5 @@
 import click
 
-verbosity_option = click.option(
-    "--verbosity",
-    type=click.Choice(["silent", "debug", "info", "warning", "error", "critical", "all"]),
-    default="warning",
-    show_default=True,
-    help="Logging verbosity level."
-)
-
-logfile_option = click.option(
-    "--logfile", "--log",
-    type=str,
-    default=None,
-    show_default=True,
-    help="Path to log file (if not set, logs to stderr)."
-)
-
-def verbosity(f):
-    f = verbosity_option(f)
-    f = logfile_option(f)
-    return f
-
 input_globs = click.option(
     "--h5", "--globh5", "--glob", "-g", "globs",
     multiple=True,

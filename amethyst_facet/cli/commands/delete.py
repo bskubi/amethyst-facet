@@ -2,7 +2,7 @@ from concurrent.futures import ProcessPoolExecutor
 import glob
 import itertools
 from typing import *
-
+import h5py
 import click
 
 def delete_from_h5(args: Tuple[str]):
