@@ -145,7 +145,7 @@ def test_agg_v2_to_v2_append_e2e(cleanup_temp):
 
     runner = CliRunner()
     path_strings = [str(p) for p in paths]
-    runner.invoke(facet, ["agg", "-u", f"{size}:{step}+{offset}", "--verbosity", "debug", *path_strings])
+    runner.invoke(facet, ["agg", "-u", f"{size}:{step}+{offset}", *path_strings])
     reader = fct.h5.ReaderV2(paths=paths)
     windows = list(reader.windows())
     assert len(windows) == (len(contexts)*len(barcodes)*len(names))
@@ -177,7 +177,7 @@ def test_agg_v2_to_v2_h5_out_e2e(cleanup_temp):
 
     runner = CliRunner()
     path_strings = [str(p) for p in paths]
-    runner.invoke(facet, ["agg", "-u", f"2:1+1", "--verbosity", "debug", "--h5-out", h5_out, *path_strings])
+    runner.invoke(facet, ["agg", "-u", f"2:1+1", "--h5-out", h5_out, *path_strings])
     reader = fct.h5.ReaderV2(paths=[h5_out])
     windows = list(reader.windows())
     assert len(windows) == (len(contexts)*len(barcodes)*len(names))
@@ -235,7 +235,7 @@ def test_variable_windows_aggregator_e2e(cleanup_temp):
 
     runner = CliRunner()
     path_strings = [str(p) for p in paths]
-    result = runner.invoke(facet, ["agg", "-v", f"{str(temp / 'windows.tsv')}", "--verbosity", "debug", "--h5-out", h5_out, *path_strings])
+    result = runner.invoke(facet, ["agg", "-v", f"{str(temp / 'windows.tsv')}", "--h5-out", h5_out, *path_strings])
     if result.exception:
         raise result.exception
     reader = fct.h5.ReaderV2(paths=[h5_out])

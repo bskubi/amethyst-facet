@@ -432,7 +432,7 @@ class AmethystH5Inserter(BaseModel):
 
 class ContextBarcode(BaseModel):
     context: str | None = Field(description = "Context for the dataset (i.e. CG, CH)")
-    barcode: str | None = Field(descirption = "Complete barcode string for the dataset")
+    barcode: str | None = Field(description = "Complete barcode string for the dataset")
     model_config = ConfigDict(str_strip_whitespace = True)
 
 @validate_call
@@ -576,7 +576,7 @@ facet --glob ./dir1/*.cov --glob ./dir2/*.cov cells.h5
 
     )
 )
-@click.option("--overwrite/--append", is_flag=True, default=True, show_default=True, help="""If HDF5_PATH exists, overwrite. Otherwise, new datasets are appended.""")
+@click.option("--overwrite/--append", "overwrite", is_flag=True, default=True, show_default=True, help="""If HDF5_PATH exists, overwrite. Otherwise, new datasets are appended.""")
 @click.option("--compression", default="gzip", show_default=True, help="""Compression algorithm applied to written HDF5 datsets.""")
 @click.option("--compression_opts", default="6", show_default=True, help="Value of compression_opts argument for h5py create_dataset, specific to compression algorithm used.")
 @click.option("--cov-chr-col", default=0, show_default=True, help="Index of 'chr' column in .cov source datasets")

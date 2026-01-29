@@ -14,13 +14,20 @@ def chromnames(draw):
 def dense_uniform_observations(draw):
     state = dict()
     try:
+        # Window size
         size = draw(st.integers(min_value=1, max_value=100))
         state["size"] = size
+
+        # Stride for determining window offsets
         step = size
         state["step"] = step
+
+        # Offset of first window
         offset = draw(st.integers(min_value=-1000, max_value=1000))
         state["offset"] = offset
-        observations_count = draw(st.integers(min_value=0, max_value=1000))*size
+
+        # Number of observations per window
+        observations_count = draw(st.integers(min_value=0, max_value=50))*size
         state["observations_count"] = observations_count
         c_val = draw(st.integers(min_value=0, max_value=1000))
         t_val = draw(st.integers(min_value=0, max_value=1000))

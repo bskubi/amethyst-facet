@@ -4,8 +4,7 @@ import amethyst_facet
 import amethyst_facet.errors
 
 def main():
-    with logger.catch(onerror=lambda _: sys.exit(1)):
-        amethyst_facet.cli.commands.facet(standalone_mode=False)
+    amethyst_facet.cli.commands.facet()
 
 
 if __name__ == "__main__":

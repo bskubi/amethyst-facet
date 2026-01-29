@@ -1,5 +1,4 @@
-import logging
-
+from loguru import logger
 import click
 
 from ..parse import CLIOptionsParser
@@ -41,7 +40,7 @@ class AmethystH5Converter:
 @compression
 @click.argument("h5_out")
 @click.argument("h5_in", nargs=-1)
-def convert(globs, observations, windows, only_contexts, only_barcodes, skip_barcodes, compression, compression_opts, verbosity, logfile, h5_out, h5_in):
+def convert(globs, observations, windows, only_contexts, only_barcodes, skip_barcodes, compression, compression_opts, h5_out, h5_in):
     """Convert one or more old Amethyst HDF5 file format to v2.0.0 format.
 
     The V1 format stores bp-level observations as (chr, pos, pct, c, t) in an HDF5 dataset at /context/barcode.

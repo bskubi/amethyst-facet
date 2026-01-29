@@ -1,5 +1,4 @@
 import dataclasses as dc
-import logging
 from typing import *
 from pathlib import Path
 import warnings
@@ -63,7 +62,7 @@ class Dataset:
             self.data = self.windows
 
     def convert_dtype(self, dtype: List[Tuple[str, type]], from_df: pl.DataFrame = None):
-        logging.debug(f"Converting to dtype {dtype}")
+        logger.debug(f"Converting to dtype {dtype}")
         data = from_df if from_df is not None else self.data
         if isinstance(data, pl.DataFrame) or data.dtype != dtype:
             if isinstance(data, pl.DataFrame):
@@ -160,7 +159,7 @@ class Dataset:
                 with pl.Config(tbl_rows=100):
                     df_string = str(df)
                 logger.info("First sample of current window schema as loaded from H5 file:\n{}", df_string)
-            logging.debug("Finished writing data to {}::{}", file.filename, self.h5path)
+            logger.debug("Finished writing data to {}::{}", file.filename, self.h5path)
             self.check_version(path)
 
     @property

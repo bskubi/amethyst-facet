@@ -3,11 +3,13 @@ from typing import *
 import warnings
 
 import click
+from loguru import logger
 
 from ..parse import CLIOptionsParser, VariableWindowsParser, UniformWindowsParser
 from ..decorators import *
 
 class AmethystH5Aggregator():
+    @logger.catch(reraise=True)
     def aggregate(
         self,
         globs,

@@ -31,7 +31,6 @@ def test_convert(cleanup_temp):
 
 def test_convert_e2e1(cleanup_temp):
     try:
-        fct.logging.config("debug", None)
         data = np.array(
             [
                 ("1", 1, 1, 1),
@@ -63,7 +62,7 @@ def test_convert_e2e1(cleanup_temp):
         path_strings = [str(p) for p in paths]
         with open(base / "only_barcodes.txt", "w") as file:
             file.write("barcode1\nbarcode3")
-        result = runner.invoke(facet, ["convert", "--only-barcodes", str(base/"only_barcodes.txt"), "--verbosity", "debug", str(h5_out), *path_strings])
+        result = runner.invoke(facet, ["convert", "--only-barcodes", str(base/"only_barcodes.txt"), str(h5_out), *path_strings])
         if result.exception:
             raise result.exception
         
@@ -86,7 +85,6 @@ def test_convert_e2e1(cleanup_temp):
 
 def test_convert_e2e2(cleanup_temp):
     try:
-        fct.logging.config("debug", None)
         data = np.array(
             [
                 ("1", 1, 1, 1),
@@ -118,7 +116,7 @@ def test_convert_e2e2(cleanup_temp):
         path_strings = [str(p) for p in paths]
         with open(base / "skip_barcodes.txt", "w") as file:
             file.write("barcode1\nbarcode3")
-        result = runner.invoke(facet, ["convert", "--skip-barcodes", str(base/"skip_barcodes.txt"), "--verbosity", "debug", str(h5_out), *path_strings])
+        result = runner.invoke(facet, ["convert", "--skip-barcodes", str(base/"skip_barcodes.txt"), str(h5_out), *path_strings])
         if result.exception:
             raise result.exception
         
@@ -139,7 +137,6 @@ def test_convert_e2e2(cleanup_temp):
 
 def test_convert_e2e3(cleanup_temp):
     try:
-        fct.logging.config("debug", None)
         data = np.array(
             [
                 ("1", 1, 1, 1),
@@ -169,7 +166,7 @@ def test_convert_e2e3(cleanup_temp):
 
         runner = CliRunner()
         path_strings = [str(p) for p in paths]
-        result = runner.invoke(facet, ["convert", "--verbosity", "debug", str(h5_out), *path_strings])
+        result = runner.invoke(facet, ["convert", str(h5_out), *path_strings])
         if result.exception:
             raise result.exception
         
